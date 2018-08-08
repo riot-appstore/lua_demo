@@ -43,6 +43,7 @@ extern int luaopen_riot(lua_State *L);
 
 const struct lua_riot_builtin_c _lua_riot_builtin_c_table[] = {
     { "riot", luaopen_riot},
+    { "saul", luaopen_socket}
     { "socket", luaopen_socket}
 };
 
@@ -50,7 +51,7 @@ const struct lua_riot_builtin_lua *const lua_riot_builtin_lua_table = _lua_riot_
 const struct lua_riot_builtin_c *const lua_riot_builtin_c_table = _lua_riot_builtin_c_table;
 
 const size_t lua_riot_builtin_lua_table_len = 1;
-const size_t lua_riot_builtin_c_table_len = 2;
+const size_t lua_riot_builtin_c_table_len = 3;
 
 int main(void)
 {

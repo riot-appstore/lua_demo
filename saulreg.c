@@ -321,7 +321,7 @@ static const luaL_Reg funcs[] = {
  *
  * @return      Lua table.
  */
-int luaopen_riot(lua_State *L)
+int luaopen_saul(lua_State *L)
 {
     if (luaL_newmetatable(L, SAULDEV_TNAME)) {
         luaL_newlib(L, saul_dev_methods);
