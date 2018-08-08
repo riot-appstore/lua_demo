@@ -54,6 +54,8 @@ USEMODULE += gnrc_ipv6
 USEMODULE += sock_util
 USEMODULE += shell
 USEMODULE += shell_commands
+USEMODULE += saul
+USEMODULE += saul_reg
 USEPKG += lua
 
 include $(RIOTBASE)/Makefile.include
