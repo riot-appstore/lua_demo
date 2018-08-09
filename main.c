@@ -40,10 +40,11 @@ const struct lua_riot_builtin_lua _lua_riot_builtin_lua_table[] = {
 
 extern int luaopen_socket(lua_State *L);
 extern int luaopen_riot(lua_State *L);
+extern int luaopen_saul(lua_State *L);
 
 const struct lua_riot_builtin_c _lua_riot_builtin_c_table[] = {
     { "riot", luaopen_riot},
-    { "saul", luaopen_socket}
+    { "saul", luaopen_saul},
     { "socket", luaopen_socket}
 };
 
