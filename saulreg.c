@@ -30,6 +30,7 @@
 #include "binsearch.h"
 
 #include <math.h>
+#include <stdio.h>
 
 #define CACHE_TABLE "_devcache"
 #define SAULDEV_TNAME "saul_dev"
@@ -82,24 +83,24 @@ static struct named_byte devtype2code[] = {
  */
 static void sauldev_to_lua(lua_State *L, saul_reg_t *dev)
 {
-    lua_getfield(L, LUA_REGISTRYINDEX, CACHE_TABLE);
-
     if (dev == NULL) {
         lua_pushnil(L);
         return;
     } else {
+        lua_getfield(L, LUA_REGISTRYINDEX, CACHE_TABLE);
         lua_pushlightuserdata(L, dev);
     }
 
     if (lua_gettable(L, -2) == LUA_TNIL) {
-        lua_pop(L, -1);
+        lua_pop(L, 1);
 
         saul_reg_t **reg = lua_newuserdata(L, sizeof(*dev));
         *reg = dev;
-        luaL_setmetatable(L, SAULDEV_TNAME);
 
+        luaL_setmetatable(L, SAULDEV_TNAME);
         lua_pushlightuserdata(L, dev);
         lua_pushvalue(L, -2); /* copy the device object over the key */
+
         /* At this point we have.
          * TABLE, DEVICE, LIGHT UD, DEVICE */
         lua_settable(L, -4);
@@ -169,28 +170,34 @@ static int _write(lua_State *L)
     float maxabs = 0, scale_factor = 1.0;
 
     for (i = 0; i < n_params; i++) {
-        lua_Number n = fabsf(luaL_checknumber(L, i + 1));
+        lua_Number n = fabsf(luaL_checknumber(L, i + 2));
 
         maxabs = fmaxf(maxabs, n);
     }
 
     /* Optimize dynamic range */
-    if (maxabs > PHYDAT_MAX) {
-        while (maxabs > PHYDAT_MAX) {
-            maxabs /= 10;
-            data.scale += 1;
-        }
+    /* super hacky hack: if there is only one parameter and it is an integer
+     * that fits in the range, live it as is.*/
+    if (n_params == 1 && maxabs == roundf(maxabs)) {
+        scale_factor = 1;
     } else {
-        while (maxabs * 10.0 < PHYDAT_MAX) {
-            maxabs *= 10;
-            data.scale -= 1;
+        if (maxabs > PHYDAT_MAX) {
+            while (maxabs > PHYDAT_MAX) {
+                maxabs /= 10;
+                data.scale += 1;
+            }
+        } else {
+            while (maxabs != 0 && maxabs * 10.0 < PHYDAT_MAX) {
+                maxabs *= 10;
+                data.scale -= 1;
+            }
         }
+
+        scale_factor = exp10fi(data.scale);
     }
 
-    scale_factor = exp10fi(data.scale);
-
     for (i = 0; i < n_params; i++) {
-        lua_Number n = lua_tonumber(L, i + 1);
+        lua_Number n = lua_tonumber(L, i + 2);
 
         data.val[i] = n/scale_factor;
     }
@@ -241,6 +248,7 @@ static const luaL_Reg saul_dev_methods[] = {
     {"get_type", get_type},
     {"read", _read},
     {"write", _write},
+    {NULL, NULL}
 };
 
 /**
@@ -251,7 +259,7 @@ static const luaL_Reg saul_dev_methods[] = {
  */
 static int _index(lua_State *L)
 {
-    const char * key = luaL_checkstring(L, 1);
+    const char * key = luaL_checkstring(L, 2);
 
     saul_reg_t *dev = saul_reg_find_name(key);
     sauldev_to_lua(L, dev);
@@ -324,11 +332,12 @@ static const luaL_Reg funcs[] = {
 int luaopen_saul(lua_State *L)
 {
     if (luaL_newmetatable(L, SAULDEV_TNAME)) {
-        luaL_newlib(L, saul_dev_methods);
-        lua_setfield(L, -2, "__index");
+        luaL_setfuncs(L, saul_dev_methods, 0);
+        lua_setfield(L, -1, "__index");
     }
 
     lua_newtable(L);
+
     lua_createtable(L, 0, 1);
     lua_pushliteral(L, "v");
     lua_setfield(L, -2, "__mode");

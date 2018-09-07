@@ -5,6 +5,33 @@
    Copyright (C) 2018 Freie Universität Berlin. Distributed under the GNU Lesser General Public License v2.1.
 ]]
 
+local function lvlprint(lvl, ...)
+    io.write(string.rep(" ", lvl*3))
+    io.write(...)
+end
+
+local function istable(o)
+    return type(o) == "table" and
+           (not getmetatable(o) or not getmetatable(o).__tostring)
+end
+
+function pprint(o, lvl)
+    if not lvl then
+        lvl = 0
+    end
+    if istable(o) then
+        io.write("{\n")
+        for k,v in pairs(o) do
+            lvlprint(lvl, k, ": ")
+            pprint(v, lvl+1)
+        end
+        lvlprint(lvl, "}\n")
+        return r
+    else
+        return print(o)
+    end
+end
+
 local _R_EVAL = 0
 local _R_CONT = 1
 local _R_EXIT = 2

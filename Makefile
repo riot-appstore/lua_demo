@@ -1,7 +1,7 @@
 APPLICATION = lua_demo
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= native
+BOARD ?= stm32f4discovery
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../..
@@ -45,7 +45,9 @@ QUIET ?= 1
 # This value is in excess because we are not sure of the exact requirements of
 # lua (see the package's docs). It must be fixed in the future by taking
 # appropriate measurements.
-CFLAGS += -DTHREAD_STACKSIZE_MAIN='(THREAD_STACKSIZE_DEFAULT+7000)'
+CFLAGS += -DTHREAD_STACKSIZE_MAIN='(THREAD_STACKSIZE_DEFAULT+9000)' -DLUA_DEBUG -DSTRCACHE_N=2 -DSTRCACHE_M=1
+
+CFLAGS += -DDEBUG_ASSERT_VERBOSE
 
 USEMODULE += gnrc_netdev_default
 USEMODULE += auto_init_gnrc_netif
@@ -56,6 +58,8 @@ USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += saul
 USEMODULE += saul_reg
+USEMODULE += saul_gpio
+USEMODULE += servo
 USEPKG += lua
 
 include $(RIOTBASE)/Makefile.include

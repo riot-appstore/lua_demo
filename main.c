@@ -21,6 +21,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "periph/pwm.h"
+#include "servo.h"
+#include "saul.h"
+#include "saul_reg.h"
+
 #include "lua_run.h"
 #include "lua_builtin.h"
 #include "repl.lua.h"
@@ -32,7 +37,7 @@
 
 static char lua_memory[MAIN_LUA_MEM_SIZE] __attribute__ ((aligned(__BIGGEST_ALIGNMENT__)));
 
-#define BARE_MINIMUM_MODS (LUAR_LOAD_BASE | LUAR_LOAD_IO | LUAR_LOAD_CORO | LUAR_LOAD_PACKAGE | LUAR_LOAD_TABLE)
+#define BARE_MINIMUM_MODS (LUAR_LOAD_BASE | LUAR_LOAD_IO | LUAR_LOAD_CORO | LUAR_LOAD_PACKAGE | LUAR_LOAD_STRING)
 
 const struct lua_riot_builtin_lua _lua_riot_builtin_lua_table[] = {
     { "repl", repl_lua, sizeof(repl_lua) }
@@ -54,8 +59,40 @@ const struct lua_riot_builtin_c *const lua_riot_builtin_c_table = _lua_riot_buil
 const size_t lua_riot_builtin_lua_table_len = 1;
 const size_t lua_riot_builtin_c_table_len = 3;
 
+
+static int write_servo(const void *dev, phydat_t *res)
+{
+    servo_set(dev, res->val[0]);
+    return 1;
+}
+
+const saul_driver_t servo_saul_driver = {
+    .read = saul_notsup,
+    .write = write_servo,
+    .type = SAUL_ACT_SERVO
+};
+
+
 int main(void)
 {
+    int res;
+    servo_t servo;
+    saul_reg_t servo_reg = {.dev = &servo, .name = "Servomotor",
+                            .driver=&servo_saul_driver};
+
+    res = servo_init(&servo, PWM_DEV(0), 0, 1000, 2000);
+    if (res < 0) {
+        puts("Errors while initializing servo");
+        return -1;
+    }
+    puts("Servo initialized.");
+
+    if (saul_reg_add(&servo_reg) < 0) {
+        puts("Failed to register servo");
+        return -1;
+    }
+    puts("Servo registered.");
+
     printf("Using memory range for Lua heap: %p - %p, %zu bytes\n",
            lua_memory, lua_memory + MAIN_LUA_MEM_SIZE, sizeof(void *));
 
