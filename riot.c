@@ -23,6 +23,7 @@
 #include "lprefix.h"
 
 #include "shell.h"
+#include "xtimer.h"
 
 #include "lua.h"
 #include "lauxlib.h"
@@ -62,8 +63,23 @@ int _shell(lua_State *L)
     return 1;
 }
 
+/**
+ * Sleep for a (maybe fractional) number of seconds.
+ */
+int _sleep(lua_State *L)
+{
+    lua_Number s = luaL_checknumber(L, 1);
+
+    if (s > 0) {
+        xtimer_usleep(s * (1000*1000));
+    }
+
+    return 0;
+}
+
 static const luaL_Reg funcs[] = {
   {"shell", _shell},
+  {"sleep", _sleep},
   /* placeholders */
   {"BOARD", NULL},
   {"MCU", NULL},
