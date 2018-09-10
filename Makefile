@@ -60,7 +60,12 @@ USEMODULE += saul
 USEMODULE += saul_reg
 USEMODULE += saul_gpio
 USEMODULE += servo
+USEMODULE += tsl4531x
 USEPKG += lua
+
+I2C_PORT ?= 0
+
+CFLAGS += -DTSL4531_I2C_PORT=$(I2C_PORT)
 
 include $(RIOTBASE)/Makefile.include
 

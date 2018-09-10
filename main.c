@@ -23,6 +23,8 @@
 
 #include "periph/pwm.h"
 #include "servo.h"
+#include "tsl4531x.h"
+#include "tsl4531x_saul.h"
 #include "saul.h"
 #include "saul_reg.h"
 
@@ -37,7 +39,7 @@
 
 static char lua_memory[MAIN_LUA_MEM_SIZE] __attribute__ ((aligned(__BIGGEST_ALIGNMENT__)));
 
-#define BARE_MINIMUM_MODS (LUAR_LOAD_BASE | LUAR_LOAD_IO | LUAR_LOAD_CORO | LUAR_LOAD_PACKAGE | LUAR_LOAD_STRING)
+#define BARE_MINIMUM_MODS (LUAR_LOAD_BASE | LUAR_LOAD_IO | LUAR_LOAD_PACKAGE | LUAR_LOAD_MATH)
 
 const struct lua_riot_builtin_lua _lua_riot_builtin_lua_table[] = {
     { "repl", repl_lua, sizeof(repl_lua) }
@@ -72,13 +74,15 @@ const saul_driver_t servo_saul_driver = {
     .type = SAUL_ACT_SERVO
 };
 
-
 int main(void)
 {
     int res;
     servo_t servo;
+    tsl4531x_t lux_sensor;
     saul_reg_t servo_reg = {.dev = &servo, .name = "Servomotor",
-                            .driver=&servo_saul_driver};
+                            .driver=&servo_saul_driver},
+               lux_reg = {.dev = &lux_sensor, .name = "TSL45315",
+                          .driver = &tsl4531x_saul_driver};
 
     res = servo_init(&servo, PWM_DEV(0), 0, 1000, 2000);
     if (res < 0) {
@@ -92,6 +96,19 @@ int main(void)
         return -1;
     }
     puts("Servo registered.");
+
+    res = tsl4531x_init(&lux_sensor, TSL4531_I2C_PORT, TSL4531x_INTEGRATE_100ms);
+    if (res < 0) {
+        puts("Errors while initializing light sensor");
+        return -1;
+    }
+    puts("Light sensor initialized.");
+
+    if (saul_reg_add(&lux_reg) < 0) {
+        puts("Failed to register light sensor");
+        return -1;
+    }
+    puts("Light sensor registered.");
 
     printf("Using memory range for Lua heap: %p - %p, %zu bytes\n",
            lua_memory, lua_memory + MAIN_LUA_MEM_SIZE, sizeof(void *));
