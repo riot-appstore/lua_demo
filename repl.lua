@@ -61,30 +61,22 @@ local function re()
     end
     -- Try a multiline statement
     if not maybe_code then
-        -- It's not really necessary to use a coroutine, but it shows that they
-        -- work.
-        local _get_multiline = coroutine.create(
-            function ()
-                coroutine.yield(ln.."\n")   -- We already have the first line of input
-                while 1 do
-                    io.write("L.. ")
-                    io.flush()
-                    local l = io.read()
-                    if #l ~= 0 then
-                        l = l.."\n"
-                    end
-                    coroutine.yield(l)
-                end
-            end
-            )
+        local is_first_line = true
         local get_multiline = function()
-                local a, b = coroutine.resume(_get_multiline)
-                if a then
-                    return b
-                else
-                    return nil
+                    local l
+                    if is_first_line then
+                        l = ln
+                        is_first_line = false
+                    else
+                        io.write("L.. ")
+                        io.flush()
+                        l = io.read()
+                    end
+                    if #l ~= 0 then
+                            l = l.."\n"
+                    end
+                    return l
                 end
-            end
 
         maybe_code, compile_err = load(get_multiline)
     end
